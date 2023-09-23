@@ -79,6 +79,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let malloc = &c::include_system("stdlib.h", "malloc");
     let printf = &c::include_system("stdio.h", "printf");
     //let pin_init = &c::include("wokwi-api.h", "pin_init");
+    //let tristate = "tristatelevel {}=current_pulse.{};\n";
 
     let tokens = quote! {
         #include "wokwi-api.h"
@@ -94,11 +95,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         $(for n in ports_values.clone() => bool $(format!("{};\n", n)))
         } pulse;
 
-        enum tristatelevel {
-            dontcarelevel,
-            lowlevel,
-            highlevel,
-        };
+        typedef enum {
+            dontcarelevel=-1,
+            lowlevel=0,
+            highlevel=1,
+        } tristatelevel;
 
         const pulse pulse_train[] = {
             {.timestamp =0, .D0 = lowlevel, .D1 = lowlevel, .D2 = lowlevel, .D3 = lowlevel },
@@ -115,7 +116,21 @@ fn main() -> Result<(), Box<dyn Error>> {
         void chip_timer_event(void *user_data) {
             chip_state_t *chip = (chip_state_t *)user_data;
             pulse current_pulse = pulse_train[chip->index];
+
             unsigned long t = current_pulse.timestamp;
+            $(for n in ports_values.clone() => $(
+                format!("tristatelevel {}=current_pulse.{};\n", n, n)
+
+            )
+            )
+
+            $(for n in ports_values.clone() => $(
+                format!("if ({} != dontcarelevel ) {}pin_write(chip->{}, {});{}\n", n,"{",n, n,"}")
+            ))
+
+
+
+
             //$printf("chip_timer_event! timestamp:%d\n", NUMBER_OF_PULSES);
             unsigned long sim_time = (unsigned long) get_sim_nanos();
             $printf("sim time:%lu\n", sim_time);
