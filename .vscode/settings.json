@@ -1,5 +1,11 @@
 {
     "[rust]": {
         "editor.formatOnSave": true
-    }
+    },
+
+    "rust-analyzer.diagnostics.disabled": [
+        "macro-error"
+    ],
+    "rust-analyzer.procMacro.attributes.enable": false,
+    "rust-analyzer.procMacro.enable": false
 }
