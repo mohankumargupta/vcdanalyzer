@@ -1,8 +1,8 @@
 {
+    "debug.terminal.clearBeforeReusing": true,
     "[rust]": {
-        "editor.formatOnSave": true
+        "editor.formatOnSave": true,
     },
-
     "rust-analyzer.diagnostics.disabled": [
         "macro-error"
     ],

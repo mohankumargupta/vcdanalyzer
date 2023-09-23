@@ -45,6 +45,9 @@ fn main() -> Result<(), Box<dyn Error>> {
             ports.insert(i.code.to_string(), i.reference.to_string());
         }
     }
+    println!("{:?}", ports);
+    let ports_values = ports.values();
+    println!("{:?}", ports_values);
 
     let mut timestamp: u64 = 0;
 
@@ -75,22 +78,42 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let malloc = &c::include_system("stdlib.h", "malloc");
     let printf = &c::include_system("stdio.h", "printf");
-
-    let day = "tuesday";
-    let name = "George";
+    //let pin_init = &c::include("wokwi-api.h", "pin_init");
 
     let tokens = quote! {
+        #include "wokwi-api.h"
+
         typedef struct {
-            // TODO: Put your chip variables here
+        $(for n in ports_values.clone() => $(format!("pin_t {};\n", n)))
         } chip_state_t;
 
-        const char* greet_user() {
-            return $(quoted(format!("Hello {}!", name)));
-        }
+        typedef struct {
+        unsigned long long timestamp;
+        $(for n in ports_values.clone() => bool $(format!("{};\n", n)))
+        } pulse;
 
-        int main() {
-            const char* current_day = $(quoted(day));
+        enum tristatelevel {
+            dontcarelevel,
+            lowlevel,
+            highlevel,
+        };
+
+        const pulse pulse_train[] = {
+            {.timestamp =0, .D0 = lowlevel, .D1 = lowlevel, .D2 = lowlevel, .D3 = lowlevel },
+            {.timestamp = 15000, .D0 = lowlevel, .D1 = lowlevel, .D2 = lowlevel, .D3 = lowlevel },
+            {.timestamp = 30000, .D0 = highlevel },
+        };
+
+        //const char* greet_user() {
+        //    return $quoted($(format!("Hello {}!", name)));
+        //}
+
+        void chip_init() {
+
+            //const char* current_day = $(quoted(day));
             chip_state_t *chip = $malloc(sizeof(chip_state_t));
+
+            $(for n in ports_values.clone() => $(format!("chip->{} = pin_init(\"{}\", OUTPUT);\n", n, n)))
             $printf("Hello from custom chip!\n");
         }
     };
