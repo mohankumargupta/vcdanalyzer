@@ -164,13 +164,19 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     };
 
-    let stdout = std::io::stdout();
-    let mut w = fmt::IoWriter::new(stdout.lock());
+    //let stdout = std::io::stdout();
+    //let mut w = fmt::IoWriter::new(stdout.lock());
+
+    //could also use std::fs::File
+
+    let mut w = fmt::IoWriter::new(Vec::<u8>::new());
 
     let fmt = fmt::Config::from_lang::<C>();
     let config = c::Config::default();
 
     tokens.format_file(&mut w.as_formatter(&fmt), &config)?;
-
+    let vector = w.into_inner();
+    let string = std::str::from_utf8(&vector)?;
+    println!("{}", string);
     Ok(())
 }
