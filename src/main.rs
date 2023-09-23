@@ -84,11 +84,13 @@ fn main() -> Result<(), Box<dyn Error>> {
         #include "wokwi-api.h"
 
         typedef struct {
+            int index;
+            timer_t timer;
         $(for n in ports_values.clone() => $(format!("pin_t {};\n", n)))
         } chip_state_t;
 
         typedef struct {
-        unsigned long long timestamp;
+        unsigned long timestamp;
         $(for n in ports_values.clone() => bool $(format!("{};\n", n)))
         } pulse;
 
@@ -104,9 +106,29 @@ fn main() -> Result<(), Box<dyn Error>> {
             {.timestamp = 30000, .D0 = highlevel },
         };
 
+        const unsigned int  NUMBER_OF_PULSES = sizeof(pulse_train)/sizeof(pulse);
+
         //const char* greet_user() {
         //    return $quoted($(format!("Hello {}!", name)));
         //}
+
+        void chip_timer_event(void *user_data) {
+            chip_state_t *chip = (chip_state_t *)user_data;
+            pulse current_pulse = pulse_train[chip->index];
+            unsigned long t = current_pulse.timestamp;
+            //$printf("chip_timer_event! timestamp:%d\n", NUMBER_OF_PULSES);
+            unsigned long sim_time = (unsigned long) get_sim_nanos();
+            $printf("sim time:%lu\n", sim_time);
+            $printf("index: %d\n", chip->index);
+            $printf("current timestamp: %lu\n", t);
+            chip->index = chip->index + 1;
+            if ((chip->index) != NUMBER_OF_PULSES) {
+                unsigned long next_pulse = pulse_train[chip->index].timestamp - t;
+                $printf("next timestamp: %lu\n", pulse_train[chip->index].timestamp);
+                timer_start_ns(chip->timer, next_pulse, false);
+
+            }
+        }
 
         void chip_init() {
 
@@ -114,6 +136,15 @@ fn main() -> Result<(), Box<dyn Error>> {
             chip_state_t *chip = $malloc(sizeof(chip_state_t));
 
             $(for n in ports_values.clone() => $(format!("chip->{} = pin_init(\"{}\", OUTPUT);\n", n, n)))
+
+            timer_config_t timer_config = {
+                .callback = chip_timer_event,
+                .user_data = chip
+            };
+
+            chip->timer = timer_init(&timer_config);
+            timer_start_ns(chip->timer, 0, false);
+
             $printf("Hello from custom chip!\n");
         }
     };
