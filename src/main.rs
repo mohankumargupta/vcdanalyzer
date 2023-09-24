@@ -1,4 +1,5 @@
 use genco::{fmt, prelude::*};
+use std::time::Instant;
 use std::{collections::BTreeMap, error::Error, fs::File, io::BufReader};
 use vcd::{Header, Parser, Scope, ScopeItem};
 
@@ -194,6 +195,7 @@ fn generate_wokwi_chip(
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
+    let start = Instant::now();
     let mut reader = Parser::new(BufReader::new(File::open("waveform.vcd")?));
     let header = reader.parse_header()?;
     if let Some(root_scope) = find_root_scope_name(&header) {
@@ -206,6 +208,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     } else {
         // Handle the case where the root scope is not found
     }
+    let duration = start.elapsed();
 
+    println!("Time elapsed in expensive_function() is: {:?}", duration);
     Ok(())
 }
