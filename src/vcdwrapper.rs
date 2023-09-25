@@ -3,36 +3,18 @@ use std::{collections::BTreeMap, error::Error};
 use vcd::Command::{self, *};
 use vcd::{Header, Parser, Scope, ScopeItem};
 
+use crate::generator::generate_wokwi_chip;
 use crate::Signal;
-
-use crate::generate_wokwi_chip;
 
 pub struct VCDWrapper<'a> {
     //contents: Parser<BufReader<&'a [u8]>>,
     contents: &'a [u8],
 }
 
-/*
-impl<T: AsRef<Path>, U> From<T> for VCDWrapper<U> {
-    fn from(value: T) -> VCDWrapper<U> {
-        Self {
-            reader: Parser::new(BufReader::new(File::open(value).unwrap())),
-        }
-    }
-}
-*/
-
 impl<'a> VCDWrapper<'a> {
     pub fn from_string(contents: &'a [u8]) -> Self {
         Self { contents }
     }
-
-    /*
-    fn parse_header(&mut self) -> Result<Header, Box<dyn Error>> {
-        let header = self.reader.parse_header()?;
-        Ok(header)
-    }
-    */
 
     fn find_root_scope_name(&self, header: &Header) -> Option<String> {
         header.items.iter().find_map(|item| {
@@ -74,7 +56,7 @@ impl<'a> VCDWrapper<'a> {
         let command = command_result?;
 
         match command {
-            Timestamp(t) => Ok(Some((t))),
+            Timestamp(t) => Ok(Some(t)),
             ChangeScalar(i, v) => {
                 let modified_signal = signal
                     .entry(timestamp)
@@ -91,13 +73,13 @@ impl<'a> VCDWrapper<'a> {
         }
     }
 
-    pub fn vcd_to_wokwi_chip(&self) -> Result<(), Box<dyn Error>> {
+    pub fn vcd_to_wokwi_chip(&self) -> Result<Option<String>, Box<dyn Error>> {
         let mut reader = Parser::new(BufReader::new(self.contents));
         let header = reader.parse_header()?;
 
         if let Some(root_scope) = self.find_root_scope_name(&header) {
             let ports = self.find_ports(&header, &root_scope);
-            println!("{:?}", &ports);
+            //println!("{:?}", &ports);
             let mut timestamp: u64 = 0;
             let mut signal = BTreeMap::new();
             for command_result in reader {
@@ -107,13 +89,14 @@ impl<'a> VCDWrapper<'a> {
                     timestamp = t;
                 }
             }
-            println!("{:?}", &signal);
+            //println!("{:?}", &signal);
 
             let wokwi_chip_code = generate_wokwi_chip(&ports, &signal)?;
-            println!("{}", wokwi_chip_code);
+            Ok(Some(wokwi_chip_code))
+            //println!("{}", wokwi_chip_code);
         } else {
             // Handle the case where the root scope is not found
+            Ok(None)
         }
-        Ok(())
     }
 }

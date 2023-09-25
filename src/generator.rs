@@ -1,4 +1,10 @@
-fn generate_wokwi_chip(
+use std::{collections::BTreeMap, error::Error};
+
+use genco::{fmt, prelude::*};
+
+use crate::Signal;
+
+pub fn generate_wokwi_chip(
     ports: &BTreeMap<String, String>,
     _signals: &BTreeMap<u64, Signal>,
 ) -> Result<String, Box<dyn Error>> {
