@@ -1,7 +1,10 @@
 use genco::{fmt, prelude::*};
-use std::time::Instant;
+use std::time::{Duration, Instant};
 use std::{collections::BTreeMap, error::Error, fs::File, io::BufReader};
 use vcd::{Header, Parser, Scope, ScopeItem};
+mod vcdwrapper;
+use std::io::Read;
+use vcdwrapper::VCDWrapper;
 
 // Only support vcd generated from Wokwi itself using the logic analyzer
 // TODO: Support VCD generated from sigrok/pulseview
@@ -194,7 +197,7 @@ fn generate_wokwi_chip(
     Ok(string.to_string())
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn vcd_to_wokwi_chip() -> Result<(), Box<dyn Error>> {
     let start = Instant::now();
     let mut reader = Parser::new(BufReader::new(File::open("waveform.vcd")?));
     let header = reader.parse_header()?;
@@ -209,6 +212,23 @@ fn main() -> Result<(), Box<dyn Error>> {
         // Handle the case where the root scope is not found
     }
     let duration = start.elapsed();
+
+    println!("Time elapsed in expensive_function() is: {:?}", duration);
+    Ok(())
+}
+
+fn main() -> Result<(), Box<dyn Error>> {
+    //vcd_to_wokwi_chip()
+    let start = Instant::now();
+    let input_file = "waveform.vcd";
+    let mut f = File::open(input_file).expect("Unable to open the file");
+    let mut contents = String::new();
+
+    f.read_to_string(&mut contents)
+        .expect("Unable to read the file");
+    let mut v = VCDWrapper::from_string(contents.as_bytes());
+    v.vcd_to_wokwi_chip();
+    let duration: Duration = start.elapsed();
 
     println!("Time elapsed in expensive_function() is: {:?}", duration);
     Ok(())
